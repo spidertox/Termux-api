@@ -1,8 +1,9 @@
-name: Build & Publish Signed Termux:API Release
+name: Build & Publish Signed Intelli Termux:API Release
 
 on:
   push:
     branches:
+      - main
       - master
   workflow_dispatch:
   schedule:
@@ -39,19 +40,27 @@ jobs:
           git fetch upstream master
           # Attempt fast-forward or merge upstream changes
           if git merge upstream/master --no-edit; then
-            git push origin master || echo "No changes to push or push not allowed"
+            git push origin HEAD || echo "No changes to push or push not allowed"
           else
             echo "Merge conflict with upstream; skipping auto-sync merge"
             git merge --abort || true
           fi
 
-      - name: Restore Keystore from Secret
+      - name: Restore or Generate Keystore
         run: |
-          if [ -z "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
-            echo "Error: RELEASE_KEYSTORE_BASE64 secret is missing in GitHub repository settings."
-            exit 1
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.jks
+            echo "Keystore restored from secret."
+          else
+            echo "No RELEASE_KEYSTORE_BASE64 secret found. Generating an ephemeral keystore for this build."
+            keytool -genkeypair -v \
+              -keystore app/release.jks \
+              -alias "${KEYSTORE_ALIAS:-antigem}" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "${KEYSTORE_PASSWORD:-123456}" -keypass "${KEY_PASSWORD:-123456}" \
+              -dname "CN=Intelli, OU=Dev, O=spidertox, L=Unknown, ST=Unknown, C=US"
+            echo "Ephemeral keystore generated. Set RELEASE_KEYSTORE_BASE64 to match Intelli's release signing key for sharedUserId."
           fi
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.jks
 
       - name: Extract Version Info
         id: version
@@ -72,7 +81,7 @@ jobs:
         run: |
           mkdir -p release_output
           VERSION="${{ steps.version.outputs.version_name }}"
-          APK_NAME="antigem-termux-api-v${VERSION}.apk"
+          APK_NAME="intelli-termux-api-v${VERSION}.apk"
           find app/build/outputs/apk/release/ -name "*.apk" -exec cp {} "release_output/${APK_NAME}" \;
           (cd release_output && sha256sum "${APK_NAME}" > checksums-sha256.txt)
           echo "apk_name=${APK_NAME}" >> $GITHUB_OUTPUT
@@ -85,16 +94,16 @@ jobs:
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: AntiGem Termux:API v${{ steps.version.outputs.version_name }}
+          name: Intelli Termux:API v${{ steps.version.outputs.version_name }}
           body: |
-            Custom-signed Termux:API companion APK for AntiGem.
-            
+            Custom-signed Intelli Termux:API companion APK (`com.intelli.api`, `sharedUserId="com.termux"`).
+
             - Version: v${{ steps.version.outputs.version_name }}
             - Built from commit: ${{ github.sha }}
-            - Signed with AntiGem release certificate for full API integration.
+            - Signed with Intelli release certificate (`intelli-termux-shared`) for shared UID access.
             - SHA256 checksum:
             ```
             ${{ hashFiles(format('release_output/{0}', steps.artifacts.outputs.apk_name)) }}

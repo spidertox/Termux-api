@@ -162,9 +162,8 @@
         <receiver android:name=".TermuxApiReceiver"
             android:exported="false" />
 
-        <!-- AntiGem: the termux-api package (rewritten for AntiGem) calls ai.antigem.api/.TermuxApiReceiver, which
-             Android reads as the class ai.antigem.api.TermuxApiReceiver; this app's Java package stays com.termux.api -->
-        <receiver android:name="ai.antigem.api.TermuxApiReceiver"
+        <!-- Intelli: explicit component target com.intelli.api/.TermuxApiReceiver; Java namespace stays com.termux.api -->
+        <receiver android:name="com.intelli.api.TermuxApiReceiver"
             android:exported="false" />
 
         <receiver
@@ -181,9 +180,9 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- AntiGem: termux-api-start calls ai.antigem.api/.KeepAliveService (see ai.antigem.api.TermuxApiReceiver above) -->
+        <!-- Intelli: explicit component target com.intelli.api/.KeepAliveService (see com.intelli.api.TermuxApiReceiver above) -->
         <service
-            android:name="ai.antigem.api.KeepAliveService"
+            android:name="com.intelli.api.KeepAliveService"
             android:description="@string/keep_alive_service"
             android:enabled="true"
             android:exported="false" />

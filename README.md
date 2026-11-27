@@ -1,28 +1,20 @@
-# Termux API For Antigem Termux variant app(Not for offical termux)
+# Intelli Termux:API
 
-[![Build status](https://github.com/termux/termux-api/workflows/Build/badge.svg)](https://github.com/termux/termux-api/actions)
-[![Join the chat at https://gitter.im/termux/termux](https://badges.gitter.im/termux/termux.svg)](https://gitter.im/termux/termux)
+[![Build & Publish Signed Intelli Termux:API Release](https://github.com/spidertox/Termux-api/actions/workflows/release.yml/badge.svg)](https://github.com/spidertox/Termux-api/actions/workflows/release.yml)
 
-This is an app exposing Android API to command line usage and scripts or programs.
+Companion Android API app (`com.intelli.api`, `sharedUserId="com.termux"`) for [Intelli](https://github.com/spidertox/Intelli) (Shared UID build `intelli-termux-shared`, not for official Termux). Exposes Android hardware and system APIs to CLI scripts and agents.
 
-When developing or packaging, note that this app needs to be signed with the same
-key as the main Termux app for permissions to work (only the main Termux app are
-allowed to call the API methods in this app).
+When developing or packaging, note that this APK must be signed with the same release certificate (`RELEASE_KEYSTORE_BASE64`) as `intelli-termux-shared` so both apps share the `com.termux` UID and permission boundaries.
 
 ## Installation
 
-Latest version is `v0.53.0`.
+Latest base version: `v0.53.0`.
 
-Termux:API application can be obtained from [F-Droid](https://f-droid.org/en/packages/com.termux.api/).
+Download the signed release APK (`intelli-termux-api-v*.apk`) from [GitHub Releases](https://github.com/spidertox/Termux-api/releases) or [GitHub Actions](https://github.com/spidertox/Termux-api/actions/workflows/release.yml).
 
-Additionally we provide per-commit debug builds for those who want to try
-out the latest features or test their pull request. This build can be obtained
-from one of the workflow runs listed on [Github Actions](https://github.com/termux/termux-api/actions/workflows/github_action_build.yml?query=branch%3Amaster+event%3Apush)
-page.
+> **Note on package ID:** This fork uses `com.intelli.api` (socket `com.intelli.api://listen`, receiver `com.intelli.api/.TermuxApiReceiver`) with `sharedUserId="com.termux"` so it does not collide with an official F-Droid/Play `com.termux.api` install. Note that the unmodified upstream `pkg install termux-api` client binary targets `com.termux.api` unless configured or built for `com.intelli.api`.
 
-Signature keys of all offered builds are different. Before you switch the
-installation source, you will have to uninstall the Termux application and
-all currently installed plugins. Check https://github.com/termux/termux-app#Installation for more info.
+Signature keys differ from official Termux builds; always install matching-signed builds of Intelli (`intelli-termux-shared`) and **Intelli Termux:API**.
 
 ## License
 
@@ -31,9 +23,7 @@ Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
 ## How API calls are made through the termux-api helper binary
 
 The [termux-api](https://github.com/termux/termux-api-package/blob/master/termux-api.c)
-client binary in the `termux-api` package generates two linux anonymous namespace
-sockets, and passes their address to the [TermuxApiReceiver broadcast receiver](https://github.com/termux/termux-api/blob/master/app/src/main/java/com/termux/api/TermuxApiReceiver.java)
-as in:
+client binary generates two Linux abstract-namespace UNIX sockets and forwards them to the receiver (`com.intelli.api.TermuxApiReceiver`) or socket listener (`com.intelli.api://listen`):
 
 ```
 /system/bin/am broadcast ${BROADCAST_RECEIVER} --es socket_input ${INPUT_SOCKET} --es socket_output ${OUTPUT_SOCKET}

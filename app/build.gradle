@@ -8,7 +8,7 @@ android {
     def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
 
     defaultConfig {
-        applicationId "ai.antigem.api"
+        applicationId "com.intelli.api"
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
         versionCode 1002
@@ -17,17 +17,17 @@ android {
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
 
-        manifestPlaceholders.TERMUX_PACKAGE_NAME = "ai.antigem"
-        manifestPlaceholders.TERMUX_APP_NAME = "Termux"
-        manifestPlaceholders.TERMUX_API_APP_NAME = "Termux:API"
+        manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
+        manifestPlaceholders.TERMUX_APP_NAME = "Intelli"
+        manifestPlaceholders.TERMUX_API_APP_NAME = "Intelli Termux:API"
     }
 
     signingConfigs {
         release {
             storeFile file('release.jks')
-            storePassword '123456'
-            keyAlias 'antigem'
-            keyPassword '123456'
+            storePassword System.getenv('KEYSTORE_PASSWORD') ?: '123456'
+            keyAlias System.getenv('KEYSTORE_ALIAS') ?: 'antigem'
+            keyPassword System.getenv('KEY_PASSWORD') ?: '123456'
         }
         debug {
             storeFile file('testkey_untrusted.jks')
@@ -60,7 +60,7 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = new File("termux-api-app_" +
+            outputFileName = new File("intelli-termux-api-" +
                     (apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name) + ".apk")
         }
     }
@@ -104,17 +104,26 @@ static def validateVersionName(String versionName) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// AntiGem: this app is ai.antigem.api, for AntiGem (ai.antigem) instead of Termux. Its code and termux-shared's take the
-// Termux app's package from TermuxConstants, which termux-shared compiled as "com.termux" (and javac inlined into this
-// app's classes). So while the app is built, every "com.termux" in their string constants becomes "ai.antigem", like
-// AntiGem rewrites Termux packages on the phone: the app's package and paths (/data/data/ai.antigem/...), permissions,
-// this app's package (ai.antigem.api) and its socket (ai.antigem.api://listen, as the termux-api binary sends).
-// Names of Java classes that keep their packages stay: com.termux.api.*, com.termux.shared.*, com.termux.terminal.*,
-// com.termux.view.*.
-class AntiGemStrings {
-    static final String OLD = 'com.termux'
-    static final String NEW = 'ai.antigem'
-    static final List<String> KEPT = ['.api.', '.shared.', '.terminal.', '.view.']
+// Intelli: this app is com.intelli.api, paired with Intelli's termuxShared host build (com.termux). Its code and
+// termux-shared's already use "com.termux" for the host package, paths (/data/data/com.termux/...), and permissions,
+// while compiling this app's TermuxConstants.TERMUX_API_PACKAGE_NAME as "com.termux.api". So at build time, rename
+// "com.termux.api" string constants to "com.intelli.api" (for applicationId, com.intelli.api://listen socket, and
+// com.intelli.api.TermuxApiReceiver / KeepAliveService), while keeping Java component class packages under namespace
+// "com.termux.api" intact.
+class IntelliApiStrings {
+    static final String OLD = 'com.termux.api'
+    static final String NEW = 'com.intelli.api'
+    static final List<String> KEPT = [
+        '.activities.',
+        '.apis.',
+        '.settings.',
+        '.util.',
+        '.R',
+        '.BuildConfig',
+        '.TermuxAPIApplication',
+        '.SocketListener',
+        '.TermuxAPIConstants'
+    ]
 
     static Object rename(Object value) {
         if (!(value instanceof String) || !((String) value).contains(OLD)) return value
@@ -136,50 +145,50 @@ class AntiGemStrings {
     }
 }
 
-class AntiGemStringsMethodVisitor extends org.objectweb.asm.MethodVisitor {
-    AntiGemStringsMethodVisitor(org.objectweb.asm.MethodVisitor next) { super(org.objectweb.asm.Opcodes.ASM9, next) }
+class IntelliApiStringsMethodVisitor extends org.objectweb.asm.MethodVisitor {
+    IntelliApiStringsMethodVisitor(org.objectweb.asm.MethodVisitor next) { super(org.objectweb.asm.Opcodes.ASM9, next) }
 
     @Override
-    void visitLdcInsn(Object value) { super.visitLdcInsn(AntiGemStrings.rename(value)) }
+    void visitLdcInsn(Object value) { super.visitLdcInsn(IntelliApiStrings.rename(value)) }
 
     // string concatenation (StringConcatFactory): its recipe holds the constant parts
     @Override
     void visitInvokeDynamicInsn(String name, String descriptor, org.objectweb.asm.Handle bsm, Object... args) {
-        super.visitInvokeDynamicInsn(name, descriptor, bsm, args.collect { AntiGemStrings.rename(it) } as Object[])
+        super.visitInvokeDynamicInsn(name, descriptor, bsm, args.collect { IntelliApiStrings.rename(it) } as Object[])
     }
 }
 
-class AntiGemStringsClassVisitor extends org.objectweb.asm.ClassVisitor {
-    AntiGemStringsClassVisitor(org.objectweb.asm.ClassVisitor next) { super(org.objectweb.asm.Opcodes.ASM9, next) }
+class IntelliApiStringsClassVisitor extends org.objectweb.asm.ClassVisitor {
+    IntelliApiStringsClassVisitor(org.objectweb.asm.ClassVisitor next) { super(org.objectweb.asm.Opcodes.ASM9, next) }
 
     // constant fields (static final String X = "...")
     @Override
     org.objectweb.asm.FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        return super.visitField(access, name, descriptor, signature, AntiGemStrings.rename(value))
+        return super.visitField(access, name, descriptor, signature, IntelliApiStrings.rename(value))
     }
 
     @Override
     org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        return new AntiGemStringsMethodVisitor(super.visitMethod(access, name, descriptor, signature, exceptions))
+        return new IntelliApiStringsMethodVisitor(super.visitMethod(access, name, descriptor, signature, exceptions))
     }
 }
 
-abstract class AntiGemPackageStrings implements com.android.build.api.instrumentation.AsmClassVisitorFactory<com.android.build.api.instrumentation.InstrumentationParameters.None> {
+abstract class IntelliApiPackageStrings implements com.android.build.api.instrumentation.AsmClassVisitorFactory<com.android.build.api.instrumentation.InstrumentationParameters.None> {
     @Override
     org.objectweb.asm.ClassVisitor createClassVisitor(com.android.build.api.instrumentation.ClassContext classContext, org.objectweb.asm.ClassVisitor next) {
-        return new AntiGemStringsClassVisitor(next)
+        return new IntelliApiStringsClassVisitor(next)
     }
 
     // this app and termux-shared (and its terminal libraries) only
     @Override
     boolean isInstrumentable(com.android.build.api.instrumentation.ClassData classData) {
-        return classData.className.startsWith('com.termux.') || classData.className.startsWith('ai.antigem.')
+        return classData.className.startsWith('com.termux.') || classData.className.startsWith('com.intelli.')
     }
 }
 
 androidComponents {
     onVariants(selector().all()) { variant ->
-        variant.instrumentation.transformClassesWith(AntiGemPackageStrings.class,
+        variant.instrumentation.transformClassesWith(IntelliApiPackageStrings.class,
                 com.android.build.api.instrumentation.InstrumentationScope.ALL) {}
         variant.instrumentation.setAsmFramesComputationMode(com.android.build.api.instrumentation.FramesComputationMode.COPY_FRAMES)
     }
