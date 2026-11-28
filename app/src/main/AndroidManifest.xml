@@ -162,8 +162,8 @@
         <receiver android:name=".TermuxApiReceiver"
             android:exported="false" />
 
-        <!-- Intelli: explicit component target com.intelli.api/.TermuxApiReceiver; Java namespace stays com.termux.api -->
-        <receiver android:name="com.intelli.api.TermuxApiReceiver"
+        <!-- Intelli: explicit component target ai.intelli.api/.TermuxApiReceiver; Java namespace stays com.termux.api -->
+        <receiver android:name="ai.intelli.api.TermuxApiReceiver"
             android:exported="false" />
 
         <receiver
@@ -180,9 +180,9 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Intelli: explicit component target com.intelli.api/.KeepAliveService (see com.intelli.api.TermuxApiReceiver above) -->
+        <!-- Intelli: explicit component target ai.intelli.api/.KeepAliveService (see ai.intelli.api.TermuxApiReceiver above) -->
         <service
-            android:name="com.intelli.api.KeepAliveService"
+            android:name="ai.intelli.api.KeepAliveService"
             android:description="@string/keep_alive_service"
             android:enabled="true"
             android:exported="false" />

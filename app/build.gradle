@@ -8,7 +8,7 @@ android {
     def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
 
     defaultConfig {
-        applicationId "com.intelli.api"
+        applicationId "ai.intelli.api"
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
         versionCode 1002
@@ -17,7 +17,7 @@ android {
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
 
-        manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
+        manifestPlaceholders.TERMUX_PACKAGE_NAME = "ai.intelli"
         manifestPlaceholders.TERMUX_APP_NAME = "Intelli"
         manifestPlaceholders.TERMUX_API_APP_NAME = "Intelli Termux:API"
     }
@@ -104,25 +104,28 @@ static def validateVersionName(String versionName) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Intelli: this app is com.intelli.api, paired with Intelli's termuxShared host build (com.termux). Its code and
+// Intelli: this app is ai.intelli.api, paired with Intelli's standalone host app (ai.intelli). Its code and
 // termux-shared's already use "com.termux" for the host package, paths (/data/data/com.termux/...), and permissions,
 // while compiling this app's TermuxConstants.TERMUX_API_PACKAGE_NAME as "com.termux.api". So at build time, rename
-// "com.termux.api" string constants to "com.intelli.api" (for applicationId, com.intelli.api://listen socket, and
-// com.intelli.api.TermuxApiReceiver / KeepAliveService), while keeping Java component class packages under namespace
-// "com.termux.api" intact.
+// "com.termux" string constants to "ai.intelli" (producing ai.intelli, /data/data/ai.intelli/..., ai.intelli.api,
+// ai.intelli.api://listen, ai.intelli.permission.*, ai.intelli.app.*, and ai.intelli.api.TermuxApiReceiver / KeepAliveService),
+// while keeping Java component / library package prefixes intact.
 class IntelliApiStrings {
-    static final String OLD = 'com.termux.api'
-    static final String NEW = 'com.intelli.api'
+    static final String OLD = 'com.termux'
+    static final String NEW = 'ai.intelli'
     static final List<String> KEPT = [
-        '.activities.',
-        '.apis.',
-        '.settings.',
-        '.util.',
-        '.R',
-        '.BuildConfig',
-        '.TermuxAPIApplication',
-        '.SocketListener',
-        '.TermuxAPIConstants'
+        '.api.activities.',
+        '.api.apis.',
+        '.api.settings.',
+        '.api.util.',
+        '.api.R',
+        '.api.BuildConfig',
+        '.api.TermuxAPIApplication',
+        '.api.SocketListener',
+        '.api.TermuxAPIConstants',
+        '.shared.',
+        '.terminal.',
+        '.view.'
     ]
 
     static Object rename(Object value) {
@@ -182,7 +185,7 @@ abstract class IntelliApiPackageStrings implements com.android.build.api.instrum
     // this app and termux-shared (and its terminal libraries) only
     @Override
     boolean isInstrumentable(com.android.build.api.instrumentation.ClassData classData) {
-        return classData.className.startsWith('com.termux.') || classData.className.startsWith('com.intelli.')
+        return classData.className.startsWith('com.termux.') || classData.className.startsWith('ai.intelli.')
     }
 }
 

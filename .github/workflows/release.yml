@@ -99,11 +99,11 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Intelli Termux:API v${{ steps.version.outputs.version_name }}
           body: |
-            Custom-signed Intelli Termux:API companion APK (`com.intelli.api`, `sharedUserId="com.termux"`).
+            Custom-signed Intelli Termux:API companion APK (`ai.intelli.api`, `sharedUserId="ai.intelli"`).
 
             - Version: v${{ steps.version.outputs.version_name }}
             - Built from commit: ${{ github.sha }}
-            - Signed with Intelli release certificate (`intelli-termux-shared`) for shared UID access.
+            - Signed with Intelli release certificate (`ai.intelli`) for shared UID access.
             - SHA256 checksum:
             ```
             ${{ hashFiles(format('release_output/{0}', steps.artifacts.outputs.apk_name)) }}
